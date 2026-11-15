@@ -1,10 +1,10 @@
 # E-commerce Return Prediction
 
+[![CI](https://github.com/Avinash186200/ecommerce-return-prediction/actions/workflows/ci.yml/badge.svg)](https://github.com/Avinash186200/ecommerce-return-prediction/actions/workflows/ci.yml) ![Python](https://img.shields.io/badge/python-3.11-blue) [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 I built this to predict, at the moment an order is placed, whether an online fashion order line will be sent back. It started as a 2021 take-home case study: a few months of order lines (item, size, colour, brand, price, customer details) with a returned / kept label.
 
 The original data is not mine to share and is not in this repo. Everything here runs on a **synthetic order file with the same columns**, so you can clone it and reproduce every number below. This is a small repo: one dataset, one question, two models.
-
-[![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 
 ## At a glance
 
@@ -73,6 +73,15 @@ python scripts/run_model.py --signal 0      # pure noise: AUC about 0.5
 python scripts/run_model.py --orders your_orders.csv --label-lag-days 21 --out results
 ```
 
+## Original research code
+
+[`original/`](original/README.md) holds the code as I first wrote it for this work, sanitised and nothing else:
+client, company and person names replaced, credentials and local paths removed, data files and notebook outputs
+dropped. It is kept so the real work can be read alongside the maintained version. Some of it contains the issues
+described above; comparing the two shows each fix.
+
 ## License
 
 MIT
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [CHANGELOG](CHANGELOG.md).
