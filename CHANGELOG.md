@@ -3,6 +3,12 @@
 All notable changes to this repository are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - 2026-11-15
+
+### Docs
+- Docs: training-grade README and walkthrough. Added "What problem this solves", "What you will learn",
+  "Key concepts", a reading order for the code, and a full repo layout.
+
 ## [1.1.0] - 2026-11-15
 
 ### Added

@@ -6,6 +6,31 @@ I built this to predict, at the moment an order is placed, whether an online fas
 
 The original data is not mine to share and is not in this repo. Everything here runs on a **synthetic order file with the same columns**, so you can clone it and reproduce every number below. This is a small repo: one dataset, one question, two models.
 
+## What problem this solves
+
+Online fashion shops get a large share of orders sent back, and every return costs shipping and handling. If you can tell at checkout which order lines are likely to come back, you can act early, for example by showing size advice. The hard part is not the model. It is making sure the model only uses information that was really known when the order was placed.
+
+## What you will learn
+
+- How to build "history" features (past return rates) without letting future outcomes leak in.
+- Why a label is not known the moment an event happens, and how a label lag fixes that.
+- Why a random train/test split is wrong for time-ordered data, and how a time split with a gap works.
+- Why the scaler belongs inside the pipeline, fitted on training rows only.
+- How a noise test (a run with no signal in the data) proves the pipeline is not leaking.
+- How to read AUC and accuracy against a majority-class baseline.
+
+## Key concepts
+
+- **Prediction point:** the moment the model is asked for an answer. Here, when the order is placed. Only facts known then may be features.
+- **Label lag:** a return is only known some days after the order. An order's label counts in history from `order_date + label_lag_days + 1`.
+- **Point-in-time merge:** `pandas.merge_asof` joins each order to the latest history row whose "known from" date is on or before the order date.
+- **Smoothed (shrunk) rate:** `(returns + 20 * p0) / (orders + 20)`. Thin history is pulled toward the training mean `p0`, so one return out of one order does not mean 100%.
+- **Time split with a gap:** train on early days, skip a gap as long as the label lag, test on later days. No test-period outcome can reach training.
+- **Train-only scaling:** the `StandardScaler` sits inside the scikit-learn `Pipeline`, so it only ever sees training rows.
+- **Majority-class baseline:** always predict the most common answer. A model must beat it to be worth anything.
+- **AUC:** the chance that a random returned line gets a higher score than a random kept line. 0.5 is a coin flip. It needs no threshold.
+- **Noise test:** set `--signal 0` so returns are random. A clean pipeline then scores an AUC near 0.5.
+
 ## At a glance
 
 | | |
@@ -27,6 +52,17 @@ order lines ──► point-in-time features ──► time split + gap ──�
 2. **Customer features.** Age and account age, both measured at the order date.
 3. **Split by time.** Train on the earliest 75% of days, skip a gap equal to the label lag, test on the last 25%.
 4. **Models.** Logistic regression and a shallow random forest, each in a pipeline with a scaler. Threshold fixed at 0.5.
+
+### Reading order
+
+There are no notebooks here. Read the code in this order; each file is short.
+
+1. [`src/returnpred/data.py`](src/returnpred/data.py): `make_synthetic_orders` builds the order file. It teaches what the input looks like, and how a hidden per-customer and per-item return tendency is planted so there is something to find.
+2. [`src/returnpred/features.py`](src/returnpred/features.py): `_prior_rate` and `build_features` build the point-in-time features; `time_split` makes the split with a gap. This is the core of the repo: how to stop future labels leaking into features.
+3. [`src/returnpred/model.py`](src/returnpred/model.py): `make_model` and `evaluate`. It teaches the pipeline (scaler + model), the baseline, and the metrics.
+4. [`scripts/run_model.py`](scripts/run_model.py): the command line that ties it together. Run it, then run it again with `--signal 0`.
+5. [`tests/test_returnpred.py`](tests/test_returnpred.py): each test checks one leakage rule. Reading the tests is the fastest way to see what "leak-free" means in code.
+6. [`docs/methodology.md`](docs/methodology.md): the full method and the audit of the original notebook.
 
 ## Results on synthetic data
 
@@ -57,10 +93,20 @@ With `--signal 0` (returns independent of every feature), both models score an A
 ## Repo layout
 
 ```
-src/returnpred/  data.py (synthetic orders) · features.py (point-in-time features, split) · model.py
-scripts/         run_model.py
-tests/           brute-force label-lag check, own-label check, ages, split gap, noise test
-docs/            methodology.md
+src/returnpred/
+  data.py          synthetic order lines with a planted return tendency
+  features.py      point-in-time history features, ages, time split with a gap
+  model.py         pipelines (scaler + logistic regression / random forest) and evaluation
+scripts/
+  run_model.py     command line: build features, split, train, print the results table
+tests/
+  test_returnpred.py   brute-force label-lag check, own-label check, ages, split gap, noise test
+docs/
+  README.md        index of the docs
+  methodology.md   method, validation design and leakage audit
+original/          the original 2021 notebooks, sanitised (read-only record)
+.github/workflows/ci.yml   runs the tests and the script on every push
+requirements.txt · CHANGELOG.md · CONTRIBUTING.md · LICENSE
 ```
 
 ## Quick start
